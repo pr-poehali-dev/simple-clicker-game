@@ -100,37 +100,37 @@ const Index = () => {
       id: 'click_power',
       name: 'Усиленный клик',
       description: '+1 очко за клик',
-      baseCost: 15,
+      baseCost: 25,
       effect: 1,
       icon: 'MousePointer',
-      costMultiplier: 1.15
+      costMultiplier: 1.5
     },
     {
       id: 'multiplier',
       name: 'Множитель x1.5',
-      description: 'Увеличивает все очки в 1.5 раза',
-      baseCost: 100,
-      effect: 1.5,
+      description: 'Увеличивает все очки в 1.2 раза',
+      baseCost: 200,
+      effect: 1.2,
       icon: 'Zap',
-      costMultiplier: 1.8
+      costMultiplier: 2.2
     },
     {
       id: 'auto_clicker',
       name: 'Автокликер',
-      description: '+2 очка в секунду',
-      baseCost: 75,
-      effect: 2,
+      description: '+1 очко в секунду',
+      baseCost: 150,
+      effect: 1,
       icon: 'RotateCcw',
-      costMultiplier: 1.25
+      costMultiplier: 1.8
     },
     {
       id: 'mega_boost',
       name: 'Мега усиление',
-      description: '+5 очков за клик',
-      baseCost: 250,
-      effect: 5,
+      description: '+3 очка за клик',
+      baseCost: 500,
+      effect: 3,
       icon: 'Rocket',
-      costMultiplier: 1.4
+      costMultiplier: 2.0
     }
   ];
 
@@ -258,7 +258,7 @@ const Index = () => {
       const interval = setInterval(() => {
         setGameState(prev => ({
           ...prev,
-          points: prev.points + (autoClickerLevel * 5 * prev.multiplier)
+          points: prev.points + (autoClickerLevel * 1 * prev.multiplier)
         }));
       }, 1000);
 
@@ -267,7 +267,9 @@ const Index = () => {
   }, [gameState.upgrades['auto_clicker'], gameState.multiplier]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-4">
+    <div className="min-h-screen mountain-bg relative p-4">
+      <div className="absolute inset-0 mountain-overlay"></div>
+      <div className="relative z-10">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
@@ -278,7 +280,7 @@ const Index = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Главная игровая зона */}
           <div className="lg:col-span-2">
-            <Card className="backdrop-blur-md bg-white/70 border-white/20 shadow-xl">
+            <Card className="liquid-glass-primary rounded-3xl border-0 shadow-2xl">
               <CardHeader className="text-center">
                 <CardTitle className="text-2xl">
                   <Icon name="Coins" className="inline mr-2" />
@@ -292,7 +294,7 @@ const Index = () => {
                 <div className="relative">
                   <Button
                     onClick={handleClick}
-                    className={`w-48 h-48 rounded-full text-2xl font-bold bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 shadow-2xl transition-all duration-150 backdrop-blur-sm border-2 border-white/30 ${
+                    className={`w-48 h-48 rounded-full text-2xl font-bold liquid-glass-primary liquid-glass-hover shadow-2xl transition-all duration-300 border-2 border-white/40 ${
                       clickAnimation ? 'scale-95 shadow-lg' : 'scale-100'
                     }`}
                   >
@@ -328,7 +330,7 @@ const Index = () => {
           {/* Боковая панель с вкладками */}
           <div>
             <Tabs defaultValue="shop" className="w-full">
-              <TabsList className="grid w-full grid-cols-3 backdrop-blur-md bg-white/50 border-white/20">
+              <TabsList className="grid w-full grid-cols-3 liquid-glass rounded-2xl border-0">
                 <TabsTrigger value="shop">
                   <Icon name="ShoppingCart" size={16} className="mr-1" />
                   Магазин
@@ -356,7 +358,7 @@ const Index = () => {
                       const canAfford = gameState.points >= cost;
                       
                       return (
-                        <div key={upgrade.id} className="flex items-center justify-between p-3 border rounded-lg backdrop-blur-sm bg-white/40 border-white/30">
+                        <div key={upgrade.id} className="flex items-center justify-between p-4 liquid-glass liquid-glass-hover rounded-2xl border-0 transition-all duration-300">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
                               <Icon name={upgrade.icon as any} size={20} />
@@ -370,7 +372,7 @@ const Index = () => {
                             onClick={() => buyUpgrade(upgrade)}
                             disabled={!canAfford}
                             size="sm"
-                            className="ml-2 backdrop-blur-sm"
+                            className="ml-2 liquid-glass liquid-glass-hover rounded-xl px-4 py-2 text-white font-medium transition-all duration-300"
                           >
                             Купить
                           </Button>
@@ -394,8 +396,8 @@ const Index = () => {
                       return (
                         <div
                           key={achievement.id}
-                          className={`p-3 border rounded-lg backdrop-blur-sm ${
-                            unlocked ? 'bg-green-100/60 border-green-200/50' : 'bg-white/40 border-white/30'
+                          className={`p-4 liquid-glass liquid-glass-hover rounded-2xl border-0 transition-all duration-300 ${
+                            unlocked ? 'bg-gradient-to-r from-green-200/20 to-green-300/20' : ''
                           }`}
                         >
                           <div className="flex items-center gap-2 mb-1">
@@ -423,7 +425,7 @@ const Index = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
-                      <div className="flex justify-between items-center p-2 bg-yellow-100/60 rounded border backdrop-blur-sm border-yellow-200/50">
+                      <div className="flex justify-between items-center p-3 liquid-glass liquid-glass-hover rounded-2xl border-0 bg-gradient-to-r from-yellow-200/20 to-yellow-300/20">
                         <span className="flex items-center gap-2">
                           <Icon name="Crown" size={16} className="text-yellow-600" />
                           <span className="font-medium">Вы</span>
@@ -456,7 +458,7 @@ const Index = () => {
                         variant="outline" 
                         size="sm"
                         onClick={() => setSoundEnabled(!soundEnabled)}
-                        className={`backdrop-blur-sm ${soundEnabled ? 'bg-green-100/60 text-green-700' : 'bg-red-100/60 text-red-700'}`}
+                        className={`liquid-glass liquid-glass-hover rounded-xl px-4 py-2 font-medium transition-all duration-300 ${soundEnabled ? 'text-green-200 bg-gradient-to-r from-green-200/20 to-green-300/20' : 'text-red-200 bg-gradient-to-r from-red-200/20 to-red-300/20'}`}
                       >
                         {soundEnabled ? 'Вкл' : 'Выкл'}
                       </Button>
@@ -479,8 +481,7 @@ const Index = () => {
           </div>
         </div>
       </div>
-
-
+      </div>
     </div>
   );
 };
