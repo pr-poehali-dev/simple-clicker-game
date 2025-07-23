@@ -21,9 +21,10 @@ interface Upgrade {
   id: string;
   name: string;
   description: string;
-  cost: number;
+  baseCost: number;
   effect: number;
   icon: string;
+  costMultiplier: number;
 }
 
 interface Achievement {
@@ -47,39 +48,89 @@ const Index = () => {
 
   const [clickAnimation, setClickAnimation] = useState(false);
   const [floatingPoints, setFloatingPoints] = useState<Array<{id: number, points: number, x: number, y: number}>>([]);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+
+  // Функция для вычисления стоимости улучшения
+  const getUpgradeCost = (upgrade: Upgrade, level: number): number => {
+    return Math.floor(upgrade.baseCost * Math.pow(upgrade.costMultiplier, level));
+  };
+
+  // Звуковые эффекты
+  const playClickSound = () => {
+    if (!soundEnabled) return;
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.1);
+    
+    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.1);
+  };
+
+  const playPurchaseSound = () => {
+    if (!soundEnabled) return;
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.setValueAtTime(523, audioContext.currentTime);
+    oscillator.frequency.setValueAtTime(659, audioContext.currentTime + 0.1);
+    oscillator.frequency.setValueAtTime(784, audioContext.currentTime + 0.2);
+    
+    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.3);
+  };
 
   const upgrades: Upgrade[] = [
     {
       id: 'click_power',
       name: 'Усиленный клик',
       description: '+1 очко за клик',
-      cost: 10,
+      baseCost: 15,
       effect: 1,
-      icon: 'MousePointer'
+      icon: 'MousePointer',
+      costMultiplier: 1.15
     },
     {
       id: 'multiplier',
-      name: 'Множитель x2',
-      description: 'Удваивает все очки',
-      cost: 50,
-      effect: 2,
-      icon: 'Zap'
+      name: 'Множитель x1.5',
+      description: 'Увеличивает все очки в 1.5 раза',
+      baseCost: 100,
+      effect: 1.5,
+      icon: 'Zap',
+      costMultiplier: 1.8
     },
     {
       id: 'auto_clicker',
       name: 'Автокликер',
-      description: '+5 очков в секунду',
-      cost: 100,
-      effect: 5,
-      icon: 'RotateCcw'
+      description: '+2 очка в секунду',
+      baseCost: 75,
+      effect: 2,
+      icon: 'RotateCcw',
+      costMultiplier: 1.25
     },
     {
       id: 'mega_boost',
       name: 'Мега усиление',
-      description: '+10 очков за клик',
-      cost: 500,
-      effect: 10,
-      icon: 'Rocket'
+      description: '+5 очков за клик',
+      baseCost: 250,
+      effect: 5,
+      icon: 'Rocket',
+      costMultiplier: 1.4
     }
   ];
 
@@ -131,8 +182,9 @@ const Index = () => {
       totalClicks: prev.totalClicks + 1
     }));
 
-    // Анимация клика
+    // Анимация клика и звук
     setClickAnimation(true);
+    playClickSound();
     setTimeout(() => setClickAnimation(false), 150);
 
     // Плавающие очки
@@ -151,14 +203,18 @@ const Index = () => {
   };
 
   const buyUpgrade = (upgrade: Upgrade) => {
-    if (gameState.points >= upgrade.cost) {
+    const level = gameState.upgrades[upgrade.id] || 0;
+    const cost = getUpgradeCost(upgrade, level);
+    
+    if (gameState.points >= cost) {
+      playPurchaseSound();
       setGameState(prev => {
         const newState = {
           ...prev,
-          points: prev.points - upgrade.cost,
+          points: prev.points - cost,
           upgrades: {
             ...prev.upgrades,
-            [upgrade.id]: (prev.upgrades[upgrade.id] || 0) + 1
+            [upgrade.id]: level + 1
           }
         };
 
@@ -211,7 +267,7 @@ const Index = () => {
   }, [gameState.upgrades['auto_clicker'], gameState.multiplier]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
@@ -222,7 +278,7 @@ const Index = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Главная игровая зона */}
           <div className="lg:col-span-2">
-            <Card>
+            <Card className="backdrop-blur-md bg-white/70 border-white/20 shadow-xl">
               <CardHeader className="text-center">
                 <CardTitle className="text-2xl">
                   <Icon name="Coins" className="inline mr-2" />
@@ -236,7 +292,7 @@ const Index = () => {
                 <div className="relative">
                   <Button
                     onClick={handleClick}
-                    className={`w-48 h-48 rounded-full text-2xl font-bold bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 shadow-2xl transition-all duration-150 ${
+                    className={`w-48 h-48 rounded-full text-2xl font-bold bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 shadow-2xl transition-all duration-150 backdrop-blur-sm border-2 border-white/30 ${
                       clickAnimation ? 'scale-95 shadow-lg' : 'scale-100'
                     }`}
                   >
@@ -272,7 +328,7 @@ const Index = () => {
           {/* Боковая панель с вкладками */}
           <div>
             <Tabs defaultValue="shop" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-3 backdrop-blur-md bg-white/50 border-white/20">
                 <TabsTrigger value="shop">
                   <Icon name="ShoppingCart" size={16} className="mr-1" />
                   Магазин
@@ -289,31 +345,32 @@ const Index = () => {
 
               {/* Магазин улучшений */}
               <TabsContent value="shop" className="space-y-4">
-                <Card>
+                <Card className="backdrop-blur-md bg-white/70 border-white/20 shadow-lg">
                   <CardHeader>
                     <CardTitle className="text-lg">Улучшения</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     {upgrades.map(upgrade => {
                       const level = gameState.upgrades[upgrade.id] || 0;
-                      const canAfford = gameState.points >= upgrade.cost;
+                      const cost = getUpgradeCost(upgrade, level);
+                      const canAfford = gameState.points >= cost;
                       
                       return (
-                        <div key={upgrade.id} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div key={upgrade.id} className="flex items-center justify-between p-3 border rounded-lg backdrop-blur-sm bg-white/40 border-white/30">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
                               <Icon name={upgrade.icon as any} size={20} />
                               <span className="font-medium">{upgrade.name}</span>
-                              {level > 0 && <Badge variant="secondary">{level}</Badge>}
+                              {level > 0 && <Badge variant="secondary" className="bg-purple-100/60">{level}</Badge>}
                             </div>
                             <p className="text-sm text-gray-600">{upgrade.description}</p>
-                            <p className="text-sm font-medium text-purple-600">{upgrade.cost} очков</p>
+                            <p className="text-sm font-medium text-purple-600">{cost.toLocaleString()} очков</p>
                           </div>
                           <Button
                             onClick={() => buyUpgrade(upgrade)}
                             disabled={!canAfford}
                             size="sm"
-                            className="ml-2"
+                            className="ml-2 backdrop-blur-sm"
                           >
                             Купить
                           </Button>
@@ -326,7 +383,7 @@ const Index = () => {
 
               {/* Достижения */}
               <TabsContent value="achievements" className="space-y-4">
-                <Card>
+                <Card className="backdrop-blur-md bg-white/70 border-white/20 shadow-lg">
                   <CardHeader>
                     <CardTitle className="text-lg">Достижения</CardTitle>
                   </CardHeader>
@@ -337,8 +394,8 @@ const Index = () => {
                       return (
                         <div
                           key={achievement.id}
-                          className={`p-3 border rounded-lg ${
-                            unlocked ? 'bg-green-50 border-green-200' : 'bg-gray-50'
+                          className={`p-3 border rounded-lg backdrop-blur-sm ${
+                            unlocked ? 'bg-green-100/60 border-green-200/50' : 'bg-white/40 border-white/30'
                           }`}
                         >
                           <div className="flex items-center gap-2 mb-1">
@@ -360,24 +417,24 @@ const Index = () => {
                 </Card>
 
                 {/* Таблица лидеров (заглушка) */}
-                <Card>
+                <Card className="backdrop-blur-md bg-white/70 border-white/20 shadow-lg">
                   <CardHeader>
                     <CardTitle className="text-lg">Таблица лидеров</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
-                      <div className="flex justify-between items-center p-2 bg-yellow-50 rounded border">
+                      <div className="flex justify-between items-center p-2 bg-yellow-100/60 rounded border backdrop-blur-sm border-yellow-200/50">
                         <span className="flex items-center gap-2">
                           <Icon name="Crown" size={16} className="text-yellow-600" />
                           <span className="font-medium">Вы</span>
                         </span>
                         <span className="font-bold">{gameState.points.toLocaleString()}</span>
                       </div>
-                      <div className="flex justify-between items-center p-2 border rounded">
+                      <div className="flex justify-between items-center p-2 border rounded backdrop-blur-sm bg-white/40 border-white/30">
                         <span>Игрок_2</span>
                         <span>8,543</span>
                       </div>
-                      <div className="flex justify-between items-center p-2 border rounded">
+                      <div className="flex justify-between items-center p-2 border rounded backdrop-blur-sm bg-white/40 border-white/30">
                         <span>Игрок_3</span>
                         <span>7,221</span>
                       </div>
@@ -388,22 +445,29 @@ const Index = () => {
 
               {/* Настройки */}
               <TabsContent value="settings" className="space-y-4">
-                <Card>
+                <Card className="backdrop-blur-md bg-white/70 border-white/20 shadow-lg">
                   <CardHeader>
                     <CardTitle className="text-lg">Настройки игры</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex items-center justify-between">
                       <span>Звуковые эффекты</span>
-                      <Button variant="outline" size="sm">Вкл</Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setSoundEnabled(!soundEnabled)}
+                        className={`backdrop-blur-sm ${soundEnabled ? 'bg-green-100/60 text-green-700' : 'bg-red-100/60 text-red-700'}`}
+                      >
+                        {soundEnabled ? 'Вкл' : 'Выкл'}
+                      </Button>
                     </div>
                     <div className="flex items-center justify-between">
                       <span>Анимации</span>
-                      <Button variant="outline" size="sm">Вкл</Button>
+                      <Button variant="outline" size="sm" className="backdrop-blur-sm bg-green-100/60 text-green-700">Вкл</Button>
                     </div>
                     <div className="flex items-center justify-between">
                       <span>Автосохранение</span>
-                      <Button variant="outline" size="sm">Вкл</Button>
+                      <Button variant="outline" size="sm" className="backdrop-blur-sm bg-green-100/60 text-green-700">Вкл</Button>
                     </div>
                     <Button className="w-full" variant="destructive">
                       Сбросить прогресс
